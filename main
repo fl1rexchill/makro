@@ -1,0 +1,61 @@
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from scipy.stats import pearsonr
+import warnings
+warnings.filterwarnings('ignore')
+
+
+data = {
+    'Date': pd.date_range(start='2024-01-01', periods=22, freq='MS'),
+    'GDP_RF': [5.1, 4.8, 4.5, 4.3, 4.1, 4.0, 3.8, 3.6, 3.4, 3.2, 3.6, 3.4, 3.2, 3.0, 2.8, 2.6, 2.4, 2.2, 2.0, 1.8, 1.5, 1.1],
+    'CPI_RF': [7.4, 7.7, 7.7, 8.3, 8.3, 8.6, 9.0, 9.1, 8.8, 8.5, 9.5, 9.8, 10.2, 10.0, 9.8, 9.4, 8.8, 8.1, 8.0, 8.0, 8.0, 8.0],
+    'PPI_RF': [7.9, 7.5, 7.0, 6.5, 6.0, 5.8, 6.2, 5.9, 5.5, 5.2, 9.7, 9.2, 5.9, 5.5, 5.0, 4.8, 4.5, 0.4, 0.3, 0.2, 0.3, 0.2],
+    'Unemployment_RF': [2.9, 2.6, 2.6, 2.7, 2.6, 2.4, 2.4, 2.3, 2.5, 2.5, 2.3, 2.2, 1.8, 2.0, 2.1, 2.2, 2.2, 2.1, 2.1, 2.1, 2.1, 2.1],
+    'Rate_RF': [16.0, 16.0, 16.0, 16.0, 16.0, 16.0, 18.0, 18.0, 18.0, 18.0, 18.0, 21.0, 21.0, 21.0, 18.0, 18.0, 18.0, 16.5, 16.5, 16.5, 16.5, 16.5],
+    'Brent': [81.5, 82.0, 85.0, 89.0, 83.0, 80.0, 84.0, 79.0, 74.0, 75.0, 72.0, 71.0, 70.0, 71.0, 72.0, 71.9, 70.0, 69.0, 68.0, 70.0, 69.0, 68.0],
+    'USD_RUB': [91.0, 90.0, 92.0, 92.5, 90.0, 88.0, 87.0, 90.0, 95.0, 97.0, 100.0, 102.0, 105.0, 107.0, 105.0, 102.0, 100.0, 98.0, 97.0, 78.2, 78.0, 78.0],
+    'IPP_RF': [7.0, 5.0, 2.6, 3.9, 2.0, 1.5, 2.0, 2.5, 0.3, 2.0, 2.2, 1.4, 1.0, 0.5, 0.0, -0.5, 0.0, 0.1, 0.0, 0.0, 0.3, 0.3],
+    'PMI_RF': [50.2, 50.5, 50.8, 49.3, 50.2, 48.5, 47.0, 47.5, 48.0, 48.5, 53.1, 50.2, 48.2, 48.0, 47.5, 47.5, 47.0, 47.0, 48.0, 47.5, 47.0, 47.5],
+    'Retail_RF': [8.0, 7.0, 6.0, 5.0, 6.0, 5.9, 5.0, 5.0, 5.0, 5.0, 5.4, 4.0, 3.0, 2.0, 2.0, 1.9, 2.0, 2.1, 2.0, 1.9, 2.0, 1.9]
+}
+df = pd.DataFrame(data)
+df.set_index('Date', inplace=True)
+corr_matrix = df.corr(method='pearson')
+
+corr_matrix = corr_matrix.round(2)
+
+
+plt.figure(figsize=(12, 10))
+sns.heatmap(corr_matrix,
+            annot=True,
+            cmap='RdYlGn',
+            center=0,
+            fmt='.2f',
+            square=True,
+            linewidths=.5,
+            cbar_kws={"shrink": .8})
+
+def corr_pvalue(df):
+    p_mat = pd.DataFrame(index=df.columns, columns=df.columns)
+    for col1 in df.columns:
+        for col2 in df.columns:
+            if col1 == col2:
+                p_mat.loc[col1, col2] = 0.0
+            else:
+                _, p = pearsonr(df[col1], df[col2])
+                p_mat.loc[col1, col2] = round(p, 3)
+    return p_mat.astype(float)
+
+strong_corr = corr_matrix.abs()
+strong_corr = strong_corr[(strong_corr > 0.7) & (strong_corr < 1.0)]
+
+print("\nСильные корреляции (|r| > 0.7):")
+for col in strong_corr.columns:
+    for idx in strong_corr.index:
+        if pd.notna(strong_corr.loc[idx, col]):
+            print(f"{idx} ↔️ {col}: r = {corr_matrix.loc[idx, col]}")
+
+plt.title('Корреляция макроэкономических индикаторов РФ (2024–2025)', fontsize=14, pad=20)
+plt.tight_layout()
+plt.show()
